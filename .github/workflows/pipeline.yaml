@@ -1,0 +1,63 @@
+name: Deployment pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize]
+
+jobs:  
+  simple_deployment_pipeline:
+      runs-on: ubuntu-20.04
+      steps:
+        - uses: actions/checkout@v4
+        - uses: actions/setup-node@v4
+          with:
+            node-version: '16'
+        - name: Install dependencies
+          run: npm install
+        - name: Check style
+          run: npm run eslint
+        - name: build
+          run: npm run build
+        - name: test
+          run: npm test
+        - name: Trigger deployment
+          if: ${{github.event_name == 'push'}}
+          uses: sws2apps/render-deployment@main
+          with:
+            serviceId: ${{secrets.PHONEBOOK_ID}}
+            apiKey: ${{secrets.PHONEBOOK_API}}
+            multipleDeployment: false
+  tag_release:
+    needs: [simple_deployment_pipeline]
+    runs-on: ubuntu-20.04    
+    steps:  
+      - uses: actions/checkout@v4
+      - name: Bump version and push tag
+        if: ${{github.event_name == 'push' && !contains(toJson(github.event.commits.*.message),'#SKIP')}}
+        uses: anothrNick/github-tag-action@1.71.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEFAULT_BUMP: patch
+          RELEASE_BRANCHES: main
+          WITH_V: false
+  discord_notif:
+    needs: [simple_deployment_pipeline]
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test Success
+        uses: tsickert/discord-webhook@v7.0.0
+        if: ${{ success() }}
+        with:
+            webhook-url: ${{ secrets.DISCORD_WEBHOOK }}
+            content: 'A successful deployment of the phonebook was made'
+      - name: Test Failure
+        uses: tsickert/discord-webhook@v7.0.0
+        if: ${{ failure() }}
+        with:
+            webhook-url: ${{ secrets.DISCORD_WEBHOOK }}
+            content: 'Build failed'
