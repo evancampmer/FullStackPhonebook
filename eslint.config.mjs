@@ -50,5 +50,8 @@ export default [
       ],
       'no-console': 'off',
     },
+    parserOptions: {
+      "sourceType": "module"
+    }
   },
 ];
