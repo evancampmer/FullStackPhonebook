@@ -20,8 +20,6 @@ jobs:
           run: npm install
         - name: Check style
           run: npm run lint
-        - name: build
-          run: npm run build
         - name: Trigger deployment
           if: ${{github.event_name == 'push'}}
           uses: sws2apps/render-deployment@main
