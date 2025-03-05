@@ -21,7 +21,7 @@ jobs:
         - name: Check style
           run: npm run lint
         - name: build
-          run: cd frontend/introdemo npm run build
+          run: npm run build
         - name: Trigger deployment
           if: ${{github.event_name == 'push'}}
           uses: sws2apps/render-deployment@main
